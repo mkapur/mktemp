@@ -8,6 +8,9 @@ output:
   pdf_document:
     highlight: pygments
     toc: no
+  md_document:
+    variant: markdown_github
+  html_document:
 fontsize: 11pt
 ---
 
