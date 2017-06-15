@@ -1,0 +1,127 @@
+Part I - End-user model execution
+=================================
+
+The end-user will specify and execute the simulation using the following commands. The user will necessarliy `source()` the full BSPSP model, which is detailed in Part II.The user specifies which of four model types to implement, amongst:
+\begin{itemize}
+\item 1. Schaefer
+\item 2. Schaefer with Depensation (CMSY: Froese et al. 2016)
+\item 3. Fox
+\item 4. Fox with Depensation (CMSY: Froese et al. 2016)
+\end{itemize}
+``` r
+# Choose Scenario name for creating a seperate folder
+# S1: Base-Case
+Scenarios = c("Base-Case")
+
+for(s in 1:1){
+Scenario = Scenarios[s] 
+
+# Choose model type: 
+# 1: Schaefer
+# 2: Schaefer with Depensation (CMSY: Froese et al. 2016)  
+# 3: Fox
+# 4: Fox with Depensation (CMSY: Froese et al. 2016)
+  Model = 1  # model
+
+  Mod.names = c("Schaefer","Schaefer.RecImp","Fox","Fox.RecImp","Pella")[Model]
+
+  #  Set shape (> 0, with 1.001 ~ Fox and 2 = Schaefer)
+  shape = FALSE # set to False for using Models 1-4 
+  
+  
+  setwd(paste(File))
+  # Load assessment data
+  # cpue = read.csv(paste0(assessment,"/cpue",assessment,".csv"))#
+  # se =  read.csv(paste0(assessment,"/se",assessment,".csv"))# use 0.001 if not available 
+  # catch = read.csv(paste0(assessment,"/catch",assessment,".csv"))
+  cpue = read.csv(paste0(File,"/cpue",assessment,".csv"))#
+  se =  read.csv(paste0(File,"/se",assessment,".csv"))# use 0.001 if not available 
+  catch = read.csv(paste0(File,"/catch",assessment,".csv"))
+  
+  names(cpue)
+  names(catch)
+
+  # option to exclude CPUE time series or catch year
+
+  # mean and CV and sd for unfished biomass K (SB0)
+
+  mu.K = 200000; CV.K = 2; sd.K=sqrt(log(CV.K^2+1)) 
+  K.pr = c(mu.K,sd.K)
+  
+
+  # mean and CV and sd for Initial depletion level P1= SB/SB0
+
+  # To be translated into Beta prior as psi.pr
+  mu.psi = 0.95; CV.psi = 0.05; sd.psi = sqrt(log(CV.psi^2+1)) # choose 0.99 and 0.001 for SB1/SB0 ~ 1
+  
+
+  # Determine estimation for catchability q and observation error 
+
+  # Assign q to CPUE
+  sets.q = 1:(ncol(cpue)-1) 
+  
+  
+  # Series
+  #sets.var = rep(1,ncol(cpue)-1)# estimate the same additional variance error
+  sets.var = 1:(ncol(cpue)-1) # estimate individual additional variace
+  
+  # As option for data-weighing
+  # minimum additional observation error for each variance set (optional choose 1 value for both)
+  min.obsE = c(0.1) # Important if SE.I is not availble
+  
+  # Use SEs for abudance indices (TRUE/FALSE)
+  SE.I = TRUE
+```
+
+Assignment of model priors
+--------------------------
+
+Because prior formulations for most SPM-based assessments are specified for r, we provide the following equation to easily convert r estimates (or prior means) into HMSY for any given shape parameter input m:
+
+$$H\_{MSY} = r\\frac{m-1}{1-m^{-1}}$$
+
+However, if the prior for r is derived based on Leslie matrix approach, as commonly used for a logistic Schaefer model, we recommend approximating HMSY = r / 2 for the purpose of comparability among Schaefer, Fox and Pella-Tomlinson production function.
+
+Equations (5) - (10) in the reference paper illustrate the direct link between the Pella-Tomlinson SPM and the age-structured, which emphasizes the potential for deriving informative priors for r and m from spawning biomass- and yield-per-recruit analysis with integrated spawning recruitment relationships by generating deviates of *H*<sub>*M**S**Y*</sub> = *M**S**Y*/*B*<sub>*M**S**Y*</sub> and *B*<sub>*M**S**Y*</sub>/*K*, respectively (Maunder 2003, Thorson et al. 2012b, Wang et al. 2014).
+
+``` r
+  # Prior specification for Models 1-4, i.e. Schaefer, Fox
+
+  # Determine r prior
+
+  ## The options are: 
+  # a) Specifying a lognormal prior 
+  # b) Specifying a resiliance category after Froese et al. (2016; CMSY)
+  # Resilience: "Very low", "Low", "Medium", High" 
+  
+  #r.prior = "Low"
+  r.prior = c(0.01,0.06) # as range with upper and lower bound of lnorm prior
+  
+  
+
+  # Execute model and produce output
+
+  
+  # set TRUE if PUCL rules should be applied
+  pucl = FALSE
+  
+  # Option to produce standard KOBE plot
+  KOBE.plot = TRUE
+  
+  # Process Error
+  #Estimate set sigma.proc == True
+  # IF Fixed: typicallly 0.05-0.15 (see Ono et al. 2012)
+  sigma.proc = TRUE
+  # sigma.proc = 0.07 # Example for fixing the Process error
+  
+  # MCMC settings
+  ni <- 50000 # Number of iterations
+  nt <- 10 # Steps saved
+  nb <- 10000 # Burn-in
+  nc <- 2 # number of chains
+  
+  
+  # Run model (BSPSPexe file must be in the same working directory)
+  source(paste0(File,"/BSPSP_ICCATv3.r"))
+  }# THE END
+```
