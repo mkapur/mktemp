@@ -1,0 +1,529 @@
+---
+title: Vignette for the Bayesian Surplus Production Model with Catch-Reslience Method
+  $C_{msy}$
+subtitle: Part IV - Graphics
+author: "Henning Winker, Felipe Carvalho"
+geometry: margin = 1in
+output:
+  pdf_document:
+    highlight: pygments
+    toc: yes
+fontsize: 11pt
+---
+
+# Graphics
+## Generate Model Plots
+```{r Graphics, eval = F}
+dir.create(paste0(File,"/",assessment,"/",Scenario,"_",Mod.names,"/Output"),showWarnings = F)
+setwd(paste0(File,"/",assessment,"/",Scenario,"_",Mod.names,"/Output"))
+#dev.off()
+
+# extract predicted CPUE + CIs
+
+N = n.years
+series = n.indices
+
+#CPUE FITS
+Par = list(mfrow=c(round(n.indices/2+0.01,0),ifelse(n.indices==1,1,2)),mai=c(0.2,0.15,0,.15),omi = c(0.3,0.25,0.2,0) + 0.1,mgp=c(3,0.5,0), tck = -0.02,cex=0.8)
+png(file = paste0("Fits_",assessment,".png"), width = 7, height = ifelse(n.indices==1,5,2.5)*round(series/2+0.01,0), 
+    res = 200, units = "in")
+par(Par)
+
+for(i in 1:series){
+  
+  # set observed vs predicted CPUE
+  #par(mfrow=c(1,1))
+  Yr = years#years[is.na(CPUE[,i])==F]
+  Yr = min(Yr):max(Yr)
+  yr = Yr-min(years)+1
+  
+  fit = apply(posteriors$CPUE[,,i],2,quantile,c(0.025,0.5,0.975))
+  mufit = mean(fit[2,])
+  fit = fit/mufit
+  cpue.i = CPUE[is.na(CPUE[,i])==F,i]
+  yr.i = Yr[is.na(CPUE[,i])==F]
+  se.i = se[is.na(CPUE[,i])==F,(i+1)]
+  
+  ylim = c(min(fit*0.9,exp(log(cpue.i)-1.96*se.i)/mufit), max(fit*1.05,exp(log(cpue.i)+1.96*se.i)/mufit))
+  
+  cord.x <- c(Yr,rev(Yr))
+  cord.y <- c(fit[1,yr],rev(fit[3,yr]))
+  
+  # Plot Observed vs predicted CPUE
+  plot(years,CPUE[,i],ylab="",xlab="",ylim=ylim,xlim=range(Yr),type='n',xaxt="n",yaxt="n")
+  if(i<(n.indices-1) & n.indices>2){axis(1,labels=F,cex=0.9)} else {axis(1,labels=T,cex=0.9)}
+  axis(2,labels=T,cex=0.9)
+  polygon(cord.x,cord.y,col='grey',border=0,lty=2)
+  abline(h=1,lty=2) 
+  
+  
+  lines(Yr,fit[2,yr],lwd=2)
+  if(SE.I ==T) plotCI(yr.i,cpue.i/mufit,ui=exp(log(cpue.i)+1.96*se.i)/mufit,li=exp(log(cpue.i)-1.96*se.i)/mufit,add=T,gap=0,pch=21,xaxt="n",yaxt="n")
+  if(SE.I ==F) points(yr.i,cpue.i/mufit,pch=21,xaxt="n",yaxt="n",bg="white")
+  
+  #points(years,CPUE[,i],pch=21,bg="white",cex=1.3)
+  
+  legend('topright',paste(indices[i]),bty="n")
+}
+
+mtext(paste("Year"), side=1, outer=T, at=0.5,line=1,cex=1)
+mtext(paste("Normalized CPUE"), side=2, outer=T, at=0.5,line=1,cex=1)
+dev.off()
+
+
+# PLOT CPUE fits for available years
+# check cpue start year
+check.yrs = apply(CPUE,1,sum,na.rm=T)
+cpue.yrs = years[check.yrs>0]
+
+#CPUE FITS
+Par = list(mfrow=c(round(n.indices/2+0.01,0),ifelse(n.indices==1,1,2)),mai=c(0.2,0.15,0,.15),omi = c(0.3,0.25,0.2,0) + 0.1,mgp=c(3,0.5,0), tck = -0.02,cex=0.8)
+png(file = paste0("Fits_",assessment,"_zoom.png"), width = 7, height = ifelse(n.indices==1,5,2.5)*round(series/2+0.01,0), 
+    res = 200, units = "in")
+par(Par)
+
+for(i in 1:series){
+  
+  # set observed vs predicted CPUE
+  #par(mfrow=c(1,1))
+  Yr = years#years[is.na(CPUE[,i])==F]
+  Yr = min(Yr):max(Yr)
+  yr = Yr-min(years)+1
+  
+  fit = apply(posteriors$CPUE[,,i],2,quantile,c(0.025,0.5,0.975))
+  mufit = mean(fit[2,])
+  fit = fit/mufit
+  cpue.i = CPUE[is.na(CPUE[,i])==F,i]
+  yr.i = Yr[is.na(CPUE[,i])==F]
+  se.i = se[is.na(CPUE[,i])==F,(i+1)]
+  
+  ylim = c(min(fit[,yr[check.yrs>0]]*0.9,exp(log(cpue.i)-1.96*se.i)/mufit), max(fit[,yr[check.yrs>0]]*1.05,exp(log(cpue.i)+1.96*se.i)/mufit))
+  
+  cord.x <- c(Yr,rev(Yr))
+  cord.y <- c(fit[1,yr],rev(fit[3,yr]))
+  
+  # Plot Observed vs predicted CPUE
+  plot(years,CPUE[,i],ylab="",xlab="",ylim=ylim,xlim=range(cpue.yrs),type='n',xaxt="n",yaxt="n")
+  if(i<(n.indices-1) & n.indices>2){axis(1,labels=F,cex=0.9)} else {axis(1,labels=T,cex=0.9)}
+  axis(2,labels=T,cex=0.9)
+  polygon(cord.x,cord.y,col='grey',border=0,lty=2)
+
+  
+  lines(Yr,fit[2,yr],lwd=2)
+  if(SE.I ==T) plotCI(yr.i,cpue.i/mufit,ui=exp(log(cpue.i)+1.96*se.i)/mufit,li=exp(log(cpue.i)-1.96*se.i)/mufit,add=T,gap=0,pch=21,xaxt="n",yaxt="n")
+  if(SE.I ==F) points(yr.i,cpue.i/mufit,pch=21,xaxt="n",yaxt="n",bg="white")
+  
+  legend('topright',paste(indices[i]),bty="n")
+}
+
+mtext(paste("Year"), side=1, outer=T, at=0.5,line=1,cex=1)
+mtext(paste("Normalized CPUE"), side=2, outer=T, at=0.5,line=1,cex=1)
+dev.off()
+
+
+```
+## Prepare Kobe Plots
+```{r Kobe Plot, eval = F}
+# extract vectors BtoBmsy and FtoFmsy
+
+
+HtoHmsy = posteriors$HtoHmsy
+BtoBmsy = posteriors$BtoBmsy
+
+if(KOBE.plot==T){
+  # prepare biplot
+  mu.y = apply(HtoHmsy,2,quantile,c(0.5))
+  mu.x = apply(BtoBmsy,2,quantile,c(0.5))
+  y = HtoHmsy[,N]
+  x = BtoBmsy[,N]
+  
+  
+  f<-HtoHmsy[,N]
+  b<-BtoBmsy[,N]
+  # fit kernel function
+  kernelF <- ci2d(b,f,nbins=151,factor=2.5,ci.levels=c(0.50,0.80,0.75,0.90,0.95),show="none",col=1,xlab= expression(paste(H/H[MSY])),ylab=expression(paste(SB/SB[MSY])))
+  
+  
+  Par = list(mfrow=c(1,1),mar = c(5, 5, 1, 1), mgp =c(3,1,0), tck = -0.02,cex=0.8)
+  png(file = paste0("Kobe_",assessment,".png"), width = 6, height = 5, 
+      res = 200, units = "in")
+  par(Par)
+  
+  #Create plot
+  plot(1000,1000,type="b", xlim=c(0,2.5), ylim=c(0,max(apply(HtoHmsy,2,quantile,c(0.5)),quantile(f,0.85),2.)),lty=3,ylab=expression(paste(H/H[MSY])),xlab=expression(paste(B/B[MSY])),xaxs="i",yaxs="i")
+  
+  
+  c1 <- c(-1,5)
+  c2 <- c(1,1)
+  
+  # extract interval information from ci2d object
+  # and fill areas using the polygon function
+  zb2 = c(0,1)
+  zf2  = c(1,100)
+  zb1 = c(1,100)
+  zf1  = c(0,1)
+  polygon(c(zb1,rev(zb1)),c(0,0,1,1),col="green",border=0)
+  polygon(c(zb2,rev(zb2)),c(0,0,1,1),col="yellow",border=0)
+  polygon(c(1,100,100,1),c(1,1,100,100),col="yellow",border=0)
+  polygon(c(0,1,1,0),c(1,1,100,100),col="red",border=0)
+  
+  polygon(kernelF$contours$"0.95",lty=2,border=NA,col="cornsilk4")
+  polygon(kernelF$contours$"0.8",border=NA,lty=2,col="grey")
+  polygon(kernelF$contours$"0.5",border=NA,lty=2,col="cornsilk2")
+  points(mu.x,mu.y,pch=16,cex=1)
+  
+  
+  lines(c1,c2,lty=3,lwd=0.7)
+  lines(c2,c1,lty=3,lwd=0.7)
+  lines(mu.x,mu.y, lty=1,lwd=1.)
+  sel.yr = c(1,round(median(1:N),0),N)
+  points(mu.x[sel.yr],mu.y[sel.yr],col=
+           1,pch=c(22,21,24),bg="white",cex=1.9)
+  
+  # Get Propability
+  Pr.green = sum(ifelse(b>1 & f<1,1,0))/length(b)*100
+  Pr.red = sum(ifelse(b<1 & f>1,1,0))/length(b)*100
+  Pr.yellow = (sum(ifelse(b<1 & f<1,1,0))+sum(ifelse(b>1 & f>1,1,0)))/length(b)*100
+  
+  
+  sel.years = c(min(years),round(median(years),0),max(years))
+  ## Add legend
+  legend('topright', 
+         c(paste(sel.years),"50% C.I.","80% C.I.","95% C.I.",paste0(round(c(Pr.red,Pr.yellow,Pr.green),1),"%")), 
+         lty=c(1,1,1,rep(-1,7)),pch=c(22,21,24,rep(22,7)),pt.bg=c(rep("white",3),"cornsilk2","grey","cornsilk4","red","yellow","green"), 
+         col=1,lwd=1.1,cex=0.9,pt.cex=c(rep(1.3,3),rep(1.7,3),rep(2.1,3)),bty="n")
+  
+  
+  
+  dev.off()
+}
+
+ 
+write.csv(data.frame(BtoBmsy=b,FtoFmsy=f),paste0("Status_posterior",assessment,".csv"))  
+
+
+```
+## Prepare Biplot
+```{r Biplot, eval = F}
+mu.x = apply(HtoHmsy,2,quantile,c(0.5))
+mu.y = apply(BtoBmsy,2,quantile,c(0.5))
+x = HtoHmsy[,N]
+y = BtoBmsy[,N]
+
+
+f<-HtoHmsy[,N]
+b<-BtoBmsy[,N]
+
+# read ftarget,bthreshold
+ftarget<-0.8
+bthreshold<-0.2
+
+# fit kernel function
+kernelF <- ci2d(f,b,nbins=201,factor=2.6,ci.levels=c(0.50,0.80,0.75,0.90,0.95),show="none",col=1,ylab= expression(paste(H/H[MSY])),xlab=expression(paste(SB/SB[MSY])))
+
+
+Par = list(mfrow=c(1,1),mai=c(0.2,0.15,0,.15),omi = c(0.3,0.25,0.2,0) + 0.1, mgp =c(3,1,0), tck = -0.02,cex=0.8)
+png(file = paste0("Biplot_",assessment,".png"), width = 6, height = 5, 
+    res = 200, units = "in")
+par(Par)
+
+#Create plot
+plot(1000,1000,type="b", ylim=c(0,2.5), xlim=c(0,max(apply(HtoHmsy,2,quantile,c(0.5)),quantile(f,0.85),2.)),lty=3,xaxs="i",yaxs="i")
+
+# and fill areas using the polygon function
+fint = seq(0.001,100,0.01)
+#Zone X
+xb=bthreshold+(1.0-bthreshold)/ftarget*fint
+xf =  ifelse(xb>1,0.8,fint)
+polygon(c(0,0,xf),c(max(xb),bthreshold,xb),col="green")
+zb = bthreshold+(1.0-bthreshold)*fint
+zf  = ifelse(zb>1,1,fint) 
+polygon(c(zf,rep(max(fint),2),rep(0,2)),c(zb,max(zb),0,0,bthreshold),col="red")
+
+polygon(c(xf,rev(zf)),c(xb,rev(zb)),col="yellow")
+
+c1 <- c(-1,100)
+c2 <- c(1,1)
+
+# extract interval information from ci2d object
+# and fill areas using the polygon function
+
+polygon(kernelF$contours$"0.95",lty=2,border=NA,col="cornsilk4")
+polygon(kernelF$contours$"0.8",border=NA,lty=2,col="grey")
+polygon(kernelF$contours$"0.5",border=NA,lty=2,col="cornsilk2")
+points(mu.x,mu.y,pch=16,cex=1)
+
+lines(c1,c2,lty=3,lwd=0.7)
+lines(c2,c1,lty=3,lwd=0.7)
+lines(mu.x,mu.y, lty=1,lwd=1.)
+sel.yr = c(1,round(median(1:N),0),N)
+points(mu.x[sel.yr],mu.y[sel.yr],col=
+         1,pch=c(22,21,24),bg="white",cex=1.9)
+
+
+sel.years = c(min(years),round(median(years),0),max(years))
+## Add legend
+legend('topright', 
+       c(paste(sel.years),"50% C.I.","80% C.I.","95% C.I."), 
+       lty=c(1,1,1,-1,-1,-1),pch=c(22,21,24,22,22,22),pt.bg=c(rep("white",3),"cornsilk2","grey","cornsilk4"), 
+       col=1,lwd=1.1,cex=0.9,pt.cex=c(rep(1.3,4),1.7,1.7,1.7),bty="n")
+
+# Potential PUCL calcs
+Zone  = NULL
+Status = NULL
+X  = 0.15
+Y = 0
+Z = -0.15
+
+for(i  in 1:length(f))
+{
+  if(b[i]>1.0){
+    if(f[i]<ftarget){
+      Zone[i]<-X
+    } else if (f[i]>1.0){
+      Zone[i]<-Z
+    } else {
+      Zone[i]<-Y
+    }
+  } else {
+    if(b[i]>bthreshold+(1.0-bthreshold)/ftarget*f[i]){
+      Zone[i]<-X
+    } else if(b[i]<bthreshold+(1.0-bthreshold)*f[i]){
+      Zone[i]<-Z
+    } else {
+      Zone[i]<-Y
+    }
+  }}
+
+PUCL  =  mean(Zone)
+sign = ifelse(PUCL>= 0,"+","")
+PUCLperc = round(PUCL*100,1)
+perGreen = round(length(Zone[Zone==0.15])/length(Zone)*100,1) 
+perYellow = round(length(Zone[Zone==0])/length(Zone)*100,1) 
+perRed = round(length(Zone[Zone==-0.15])/length(Zone)*100,1)
+
+if(pucl==TRUE) mtext(paste0("PUCL adjustment = ",sign,PUCLperc,"%"), side=3, outer=T, at=0.5,line=0.3,cex=1)
+mtext(expression(paste(B/B[MSY])), side=2, outer=T, at=0.5,line=1,cex=0.9)
+mtext(expression(paste(H/H[MSY])), side=1, outer=T, at=0.5,line=1,cex=0.9)
+
+  #legend('bottomleft',paste0("PUCL adjustment = ",sign,PUCLperc,"%"),cex=1 )
+text(0.65,2.4,paste0(perGreen,"%"))
+text(0.9,2.4,paste0(perYellow,"%"))
+text(1.2,2.4,paste0(perRed,"%"))
+
+dev.off()
+
+
+Par = list(mar = c(5, 5, 1, 1), mgp =c(3,1,0), tck = -0.02,cex=0.8)
+
+png(file = paste0("Landings_",assessment,".png"), width = 5, height = 3.5, 
+    res = 200, units = "in")
+par(Par)
+
+cord.x <- c(years,rev(years))
+y<-rep(0,length(years))
+plot(years,(TC),type="l",ylim=c(0,max((TC)*1)),lty=1,lwd=1.3,xlab="Year",ylab="Catch ('000 tons)",main="")
+polygon(cord.x,c(TC,rev(y)),col="gray",border=1,lty=1)
+dev.off()
+
+
+# Process error deviation
+proc.dev = apply(posteriors$Proc.Dev,2,quantile,c(0.025,0.5,0.975))
+
+Par = list(mar = c(5, 5, 1, 1), mgp =c(3,1,0), tck = -0.02,cex=0.8)
+
+png(file = paste0("ProcDev_",assessment,".png"), width = 5, height = 3.5, 
+    res = 200, units = "in")
+par(Par)
+
+ylim = range(proc.dev)*1.1
+cord.x <- c(years,rev(years))
+cord.y <- c(proc.dev[1,],rev(proc.dev[3,]))
+# Process Error
+plot(years,proc.dev[2,],ylab="Process deviation P[t]",xlab="Year",ylim=ylim,type="n")
+polygon(cord.x,cord.y,col='grey',border=0,lty=2)
+lines(years,proc.dev[2,],lwd=2)
+lines(years,rep(0,length(years)),lty=5)
+dev.off()
+
+
+# B/Bmsy and H/Hmsy
+Par = list(mfrow=c(1,2),mar = c(5, 5, 1, 1), mgp =c(3,1,0), tck = -0.02,cex=0.8)
+png(file = paste0("TrendMSY_",assessment,".png"), width = 8, height = 3, 
+    res = 200, units = "in")
+par(Par)
+mu.x = apply(HtoHmsy,2,quantile,c(0.025,0.5,0.975))
+mu.y = apply(BtoBmsy,2,quantile,c(0.025,0.5,0.975))
+
+ylim = c(0, max(mu.x))
+cord.x <- c(years,rev(years))
+cord.y <- c(mu.x[1,],rev(mu.x[3,]))
+
+# H/Hmsy
+plot(years,mu.x[2,],ylab=expression(paste(H/H[MSY])),xlab="Year",ylim=ylim,type="n")
+polygon(cord.x,cord.y,col='grey',border=0,lty=2)
+lines(years,mu.x[2,],lwd=2)
+lines(years,rep(1,length(years)),lty=5)
+
+ylim = c(0, max(mu.y,1.1))
+
+cord.x <- c(years,rev(years))
+cord.y <- c(mu.y[1,],rev(mu.y[3,]))
+
+
+plot(years,mu.y[2,],ylab=expression(paste(B/B[MSY])),xlab="Year",ylim=ylim,type="n")
+
+polygon(cord.x,cord.y,col='grey',border=0,lty=2)
+lines(years,mu.y[2,],lwd=2)
+lines(years,rep(1,length(years)),lty=5)
+dev.off()
+
+
+# Dump Results
+write.csv(data.frame(results),paste0("Estimates_",assessment,".csv"))
+write.csv(data.frame(ref.points),paste0("FRP_",assessment,".csv"))
+
+# PRIORS
+K.prior = c(round(K.pr[1],0),sqrt(log(CV.K^2+1)))
+Psi.prior = c(mu.psi,CV.psi)  
+if(Model==5){ 
+Hmsy.prior = round(cbind(Hmsy.pr[1,]/Hmsy.pr[2,],sqrt(Hmsy.pr[1,]/Hmsy.pr[2,]^2)/(Hmsy.pr[1,]/Hmsy.pr[2,])),3)
+m.prior = round(cbind(m.pr[1]/m.pr[2],sqrt(m.pr[1]/m.pr[2]^2)/(m.pr[1]/m.pr[2])),3)
+M.prior = c(M,CV.M)
+z.prior = c(z, CV.z)
+Priors =rbind(K.prior,Psi.prior,Hmsy.prior,m.prior,M.prior,z.prior)
+row.names(Priors) = c("K","Psi",paste(row.names(ref.points)[1:nSel]),"shape m","M","z")
+colnames(Priors) = c("Mean","CV")                          
+write.csv(Priors,paste("Priors",assessment,".csv"))
+}
+
+if(Model<5){ 
+  Hmsy.prior = c(Hmsy.pr[1],sqrt(exp(Hmsy.pr[2]^2)-1))    
+  Priors =rbind(K.prior,Psi.prior,Hmsy.pr)
+  row.names(Priors) = c("K","Psi","Hmsy")
+  colnames(Priors) = c("Mean","CV")                          
+  write.csv(Priors,paste("Priors",assessment,".csv"))
+}
+
+
+
+# Posteriors
+
+sel.par = c(1,8,7,4,3,5)
+
+out=data.frame(posteriors[params[sel.par]])
+if(nSel>1) out=out[,-c(3:(3+nSel-2))]
+
+node_id = names(out)
+#informative priors
+if(Model==5) Prs = as.matrix(cbind(K.pr,Hmsy.pr[,1],m.pr,psi.pr))
+if(Model<5) Prs = as.matrix(cbind(K.pr,Hmsy.pr,c(0,0),psi.pr))
+
+#Posteriors
+Par = list(mfrow=c(round(length(node_id)/3+0.33,0),3),mai=c(0.4,0.1,0,.1),omi = c(0.3,0.5,0.1,0) + 0.1,mgp=c(1,0.1,0), tck = -0.02,cex=0.8)
+png(file = paste0("Posteriors_",assessment,".png"), width = 8, height = 2.5*round(length(node_id)/3,0), 
+    res = 200, units = "in")
+par(Par)
+
+#par(mfrow=c(4,2),oma=c(0,1,1,0), mar=c(4,4,1,1))
+
+for(i in 1:length(node_id))
+{
+  
+  post.par = as.numeric(unlist(out[paste(node_id[i])]))
+  
+  
+  if(i==1){
+    parm = fitdist(post.par, "lnorm")$estimate
+    rpr = rlnorm(10000,log(Prs[1,i]),Prs[2,i]) 
+    pdf = dlnorm(sort(post.par),parm[1],parm[2])  
+    prior = dlnorm(sort(rpr),log(Prs[1,i]),Prs[2,i])   
+    plot(sort(post.par),pdf,type="l",ylim=range(prior,pdf),xlim=range(c(post.par,quantile(rpr,c(0.0001,0.95)))),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")
+    
+    polygon(c(sort(rpr),rev(sort(rpr))),c(prior,rep(0,length(sort(rpr)))),col=gray(0.4,1))
+    polygon(c(sort(post.par),rev(sort(post.par))),c(pdf,rep(0,length(sort(post.par)))),col=gray(0.7,0.7))
+    legend('topright',c("Prior","Posterior"),pch=22,pt.cex=1.5,pt.bg = c(grey(0.4,1),grey(0.8,0.6)),bty="n")
+  }  
+  
+  if(Model==5){
+  if(i<4 & i>1){
+    parm = fitdist(post.par, "gamma")$estimate
+    rpr = rgamma(10000,(Prs[1,i]),Prs[2,i]) 
+    pdf = dgamma(sort(post.par),parm[1],parm[2])  
+    prior = dgamma(sort(rpr),Prs[1,i],Prs[2,i])   
+    plot(sort(post.par),pdf,type="l",ylim=range(prior,pdf), xlim=range(c(post.par,quantile(rpr,c(0.0001,0.96)))),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")
+    
+    polygon(c(sort(rpr),rev(sort(rpr))),c(prior,rep(0,length(sort(rpr)))),col=gray(0.4,1))
+    polygon(c(sort(post.par),rev(sort(post.par))),c(pdf,rep(0,length(sort(post.par)))),col=gray(0.7,0.7))
+    #legend('topright',c("Prior","Posterior"),pch=22,pt.cex=1.5,pt.bg = c(grey(0.4,1),grey(0.8,0.6)),bty="n")
+  }}        
+  
+  if(Model<5){
+    if(i==2){
+      parm = fitdist(post.par, "lnorm")$estimate
+      rpr = rlnorm(10000,log(Prs[1,i]),Prs[2,i]) 
+      pdf = dlnorm(sort(post.par),parm[1],parm[2])  
+      prior = dlnorm(sort(rpr),log(Prs[1,i]),Prs[2,i])   
+      plot(sort(post.par),pdf,type="l",ylim=range(prior,pdf),xlim=range(c(post.par,quantile(rpr,c(0.0001,0.95)))),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")
+      
+      polygon(c(sort(rpr),rev(sort(rpr))),c(prior,rep(0,length(sort(rpr)))),col=gray(0.4,1))
+      polygon(c(sort(post.par),rev(sort(post.par))),c(pdf,rep(0,length(sort(post.par)))),col=gray(0.7,0.7))
+    }
+    
+    if(i==3){
+      plot(1,1,type="n",xlim=range(0.5,2.5),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")  
+      abline(v=m,lwd=2)
+    }}
+    
+    if(i==4){
+    parm = fitdist(post.par[post.par<1 & post.par>0.01], "beta")$estimate
+    rpr = rbeta(10000,(Prs[1,i]),Prs[2,i]) 
+    pdf = dbeta(sort(post.par),parm[1],parm[2])  
+    prior = dbeta(sort(rpr),Prs[1,i],Prs[2,i])   
+    plot(sort(post.par),pdf,type="l",ylim=range(quantile(pdf,c(0,0.9))),xlim=range(c(0.5,post.par)),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")
+    
+    polygon(c(sort(rpr),rev(sort(rpr))),c(prior,rep(0,length(sort(rpr)))),col=gray(0.4,1))
+    polygon(c(sort(post.par),rev(sort(post.par))),c(pdf,rep(0,length(sort(post.par)))),col=gray(0.7,0.7))
+    #legend('topright',c("Prior","Posterior"),pch=22,pt.cex=1.5,pt.bg = c(grey(0.4,1),grey(0.8,0.6)),bty="n")
+    }        
+  
+  if(i>4){
+    if(sigma.proc!=TRUE & i==length(node_id)) {
+    plot(1,1,type="n",xlim=range(0,0.15^2),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")  
+    abline(v=sigma.proc^2,lwd=2)} else {
+    
+    parm = fitdist(post.par, "gamma")$estimate
+    pdf = dgamma(sort(post.par),parm[1],parm[2])  
+    plot(sort(post.par),pdf,type="l",xlim=range(0,post.par),yaxt="n",xlab=paste(node_id[i]),ylab="",xaxs="i",yaxs="i")
+    polygon(c(sort(post.par),rev(sort(post.par))),c(pdf,rep(0,length(sort(post.par)))),col=gray(0.7,0.7))
+    
+    #legend('topright',c("Posterior"),pch=22,pt.cex=1.5,pt.bg = c(grey(0.8,0.6)),bty="n")
+  } }         
+  
+}
+mtext(paste("Density"), side=2, outer=T, at=0.5,line=1,cex=0.9)
+dev.off() 
+
+
+
+Par = list(mfrow=c(round(length(node_id)/3+0.33,0),3),mai=c(0.4,0.1,0,.1),omi = c(0.3,0.5,0.1,0) + 0.1,mgp=c(1,0.1,0), tck = -0.02,cex=0.8)
+png(file = paste0("MCMC_",assessment,".png"), width = 8, height = 2.5*round(length(node_id)/3,0), 
+    res = 200, units = "in")
+par(Par)
+for(i in 1:length(node_id)){
+  
+  cols=rainbow(10)
+  post.par = as.numeric(unlist(out[paste(node_id[i])]))
+  plot(out[,i],xlab=paste(node_id[i]),ylab="",type="l",col=cols[7])
+  lines(rep(mean(out[,i]),length(out[,i])),col=2,lwd=2)   
+}
+dev.off()
+
+cat(paste0("\n","Scenario ",Mod.names,"_",Scenario," - DONE!","\n"))
+
+setwd(File)
+
+```
+<div style="width:700px; height=500px">
+![Kobe Plot](G:/BSPSP/SMA_NA/Base-Case_Schaefer/Output/Kobe_SMA_NA.png)
+![Biplot](G:/BSPSP/SMA_NA/Base-Case_Schaefer/Output/Biplot_SMA_NA.png)
