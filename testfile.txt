@@ -1,1 +1,1 @@
-test file for mktemp 1
+test file for mktemp 2
